@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Eye } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,15 +16,33 @@ const statuses = ["pending", "confirmed", "preparing", "on_the_way", "delivered"
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
+  const [orderDate, setOrderDate] = useState("");
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
+  const [nextPage, setNextPage] = useState(null);
+  const [prevPage, setPrevPage] = useState(null);
   const { t } = useTranslation();
+  const totalPages = Math.max(1, Math.ceil(count / 10));
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  const loadOrders = async () => {
-    const { data } = await api.get("/orders/admin/orders/");
-    setOrders(data);
+  const loadOrders = async ({ orderDate: date = "", page: pageNumber = 1 } = {}) => {
+    const params = new URLSearchParams();
+    if (date) params.set("order_date", date);
+    if (pageNumber) params.set("page", pageNumber);
+
+    const url = `/orders/admin/orders/${params.toString() ? `?${params.toString()}` : ""}`;
+    const { data } = await api.get(url);
+    const results = Array.isArray(data) ? data : data.results || [];
+
+    setOrders(results);
+    setPage(pageNumber);
+    setCount(data.count ?? results.length);
+    setNextPage(data.next ?? null);
+    setPrevPage(data.previous ?? null);
   };
 
   useEffect(() => {
-    loadOrders();
+    loadOrders({ page: 1 });
   }, []);
 
   const updateStatus = async (id, status) => {
@@ -52,6 +72,23 @@ export default function AdminOrdersPage() {
         <CardTitle className="text-2xl font-bold">{t("orderManagement")}</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-6 grid gap-4 md:grid-cols-[auto_auto_1fr] items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="orderDate">Order Date</Label>
+            <Input
+              id="orderDate"
+              type="date"
+              value={orderDate}
+              onChange={(e) => setOrderDate(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2 md:col-span-2">
+            <Button onClick={() => loadOrders({ orderDate, page: 1 })}>Filter</Button>
+            <Button variant="outline" onClick={() => { setOrderDate(""); loadOrders({ page: 1 }); }}>
+              Reset
+            </Button>
+          </div>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -100,6 +137,37 @@ export default function AdminOrdersPage() {
             ))}
           </TableBody>
         </Table>
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <div className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              disabled={!prevPage}
+              onClick={() => loadOrders({ orderDate, page: page - 1 })}
+            >
+              Previous
+            </Button>
+            {pageNumbers.map((pageNumber) => (
+              <Button
+                key={pageNumber}
+                variant="outline"
+                className={pageNumber === page ? "bg-primary text-white hover:bg-primary/90" : ""}
+                onClick={() => loadOrders({ orderDate, page: pageNumber })}
+              >
+                {pageNumber}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              disabled={!nextPage}
+              onClick={() => loadOrders({ orderDate, page: page + 1 })}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

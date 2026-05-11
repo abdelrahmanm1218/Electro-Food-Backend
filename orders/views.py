@@ -1,4 +1,5 @@
 from django.db.models import Count, Sum
+from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -73,7 +74,17 @@ class OrderDetailView(generics.RetrieveAPIView):
 class AdminOrdersView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAdminUser]
-    queryset = Order.objects.all().prefetch_related("items__menu_item")
+
+    def get_queryset(self):
+        queryset = Order.objects.all().prefetch_related("items__menu_item")
+        order_date = self.request.query_params.get("order_date")
+
+        if order_date:
+            parsed_date = parse_date(order_date)
+            if parsed_date:
+                queryset = queryset.filter(created_at__date=parsed_date)
+
+        return queryset
 
 
 class AdminOrderDetailView(generics.RetrieveAPIView):

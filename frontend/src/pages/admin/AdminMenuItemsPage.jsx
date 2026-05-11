@@ -26,15 +26,26 @@ export default function AdminMenuItemsPage() {
   const [items, setItems] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [count, setCount] = useState(0);
+  const [nextPage, setNextPage] = useState(null);
+  const [prevPage, setPrevPage] = useState(null);
   const { t } = useTranslation();
+  const totalPages = Math.max(1, Math.ceil(count / 10));
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  const loadItems = async () => {
-    const { data } = await api.get("/menu/items/");
-    setItems(data);
+  const loadItems = async (pageNumber = 1) => {
+    const { data } = await api.get(`/menu/items/?page=${pageNumber}`);
+    const results = Array.isArray(data) ? data : data.results || [];
+    setItems(results);
+    setPage(pageNumber);
+    setCount(data.count ?? results.length);
+    setNextPage(data.next ?? null);
+    setPrevPage(data.previous ?? null);
   };
 
   useEffect(() => {
-    loadItems();
+    loadItems(1);
   }, []);
 
   const handleEditClick = (item) => {
@@ -65,7 +76,7 @@ export default function AdminMenuItemsPage() {
         toast.success("Menu item added successfully");
       }
       setIsDialogOpen(false);
-      loadItems();
+      loadItems(page);
     } catch (err) {
       toast.error(editingItem.id ? "Failed to update menu item" : "Failed to add menu item");
     }
@@ -73,20 +84,21 @@ export default function AdminMenuItemsPage() {
 
   return (
     <Card>
-
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-
         <CardTitle className="text-2xl font-bold">Menu Management</CardTitle>
 
         <Button size="sm" className="gap-2" onClick={handleAddClick}>
           <Plus className="h-4 w-4" />
           Add Item
         </Button>
-        
       </CardHeader>
 
       <CardContent>
-
+        <div className="mb-4 flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Page {page} {count ? `of ${Math.ceil(count / 10)}` : ""}
+          </div>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -142,8 +154,30 @@ export default function AdminMenuItemsPage() {
           </TableBody>
         </Table>
 
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <div className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" disabled={!prevPage} onClick={() => loadItems(page - 1)}>
+              Previous
+            </Button>
+            {pageNumbers.map((pageNumber) => (
+              <Button
+                key={pageNumber}
+                variant="outline"
+                className={pageNumber === page ? "bg-primary text-white hover:bg-primary/90" : ""}
+                onClick={() => loadItems(pageNumber)}
+              >
+                {pageNumber}
+              </Button>
+            ))}
+            <Button variant="outline" disabled={!nextPage} onClick={() => loadItems(page + 1)}>
+              Next
+            </Button>
+          </div>
+        </div>
       </CardContent>
-
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">

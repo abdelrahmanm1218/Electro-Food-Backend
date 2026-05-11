@@ -15,7 +15,10 @@ export default function MenuPage() {
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
-    api.get("/menu/items/").then((res) => setItems(res.data));
+    api.get("/menu/items/").then((res) => {
+      const data = res.data;
+      setItems(Array.isArray(data) ? data : data.results || []);
+    });
   }, []);
 
   const addToCart = async (menuItemId, itemName) => {
@@ -55,10 +58,16 @@ export default function MenuPage() {
               </CardDescription>
             </CardHeader>
             <CardFooter className="p-4 pt-0">
-              {user && (
-                <Button className="w-full gap-2" onClick={() => addToCart(item.id, itemName)}>
-                  <ShoppingCart className="h-4 w-4" />
-                  {t("addToCart")}
+              {item.is_available ? (
+                user ? (
+                  <Button className="w-full gap-2" onClick={() => addToCart(item.id, itemName)}>
+                    <ShoppingCart className="h-4 w-4" />
+                    {t("addToCart")}
+                  </Button>
+                ) : null
+              ) : (
+                <Button variant="secondary" className="w-full" disabled>
+                  {t("unavailable")}
                 </Button>
               )}
             </CardFooter>
