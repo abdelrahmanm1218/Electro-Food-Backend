@@ -30,7 +30,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-local-dev-key")
 IS_PRODUCTION = os.environ.get("DATABASE_URL") is not None
 DEBUG = not IS_PRODUCTION
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "https://electro-food-backend-production.up.railway.app",
+]
 
 RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
 if RAILWAY_DOMAIN:
