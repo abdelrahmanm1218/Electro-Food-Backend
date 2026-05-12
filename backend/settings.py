@@ -31,7 +31,9 @@ IS_PRODUCTION = os.environ.get("DATABASE_URL") is not None
 DEBUG = not IS_PRODUCTION
 
 ALLOWED_HOSTS = [
-    "https://electro-food-backend-production.up.railway.app",
+    "electro-food-backend-production.up.railway.app",
+    "127.0.0.1",
+    "localhost",
 ]
 
 RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
