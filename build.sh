@@ -21,3 +21,5 @@ if not User.objects.filter(username=username).exists():
 else:
     print('Superuser already exists.')
 "
+
+gunicorn backend.wsgi:application
